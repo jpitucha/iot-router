@@ -1,4 +1,5 @@
 const http = require('http')
+const fs = require('fs');
 const host = '192.168.0.102'
 const port = 8080
 
@@ -6,11 +7,20 @@ const controllers = [
     { ip: '192.168.0.51', location: 'bedroom', devices: ['computer_ledstrip', 'ambient_ledstrip'] },
 ]
 
+function nicelyFormatedDate() {
+    let now = new Date();
+    return `${now.getDate()}.${now.getMonth()}.${now.getFullYear()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`
+}
+
 function findController(location, device) {
     var ip = ''
     controllers.forEach((controller) => {
         if (controller.location == location && controller.devices.includes(device)) {
-            console.log(`Accessed ${device} in ${location} at ${controller.ip}`)
+            let msg = `${nicelyFormatedDate()} | Accessed ${device} in ${location} at ${controller.ip}`
+            fs.appendFile('iot_router_log.txt', msg + '\n', (err) => {
+                if (err) throw err;
+            })
+            console.log(msg)
             ip = controller.ip
         }
     })
@@ -29,10 +39,18 @@ const server = http.createServer((req, res) => {
         if (findController(location, device) !== '') {
             res.write('OK\n')
         } else {
-            res.write('Controller Not Found\n')
+            let msg = 'Controller Not Found!\n'
+            fs.appendFile('iot_router_log.txt', nicelyFormatedDate() + ' | ' + msg, (err) => {
+                if (err) throw err;
+            })
+            res.write(msg)
         }
     } else {
-        res.write('URL Error\n')
+        let msg = 'URL Error\n'
+        fs.appendFile('iot_router_log.txt', nicelyFormatedDate() + ' | ' + msg, (err) => {
+            if (err) throw err;
+        })
+        res.write(msg)
     }
     res.end()
 })
