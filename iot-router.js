@@ -1,10 +1,11 @@
 const http = require('http')
 const fs = require('fs');
+const net = require('net')
 const host = '192.168.0.102'
 const port = 8080
 
 const controllers = [
-    { ip: '192.168.0.51', location: 'bedroom', devices: ['computer_ledstrip', 'ambient_ledstrip'] },
+    { ip: '192.168.0.110', location: 'bedroom', devices: ['computer_ledstrip', 'ambient_ledstrip'] },
 ]
 
 function nicelyFormatedDate() {
@@ -36,7 +37,13 @@ const server = http.createServer((req, res) => {
         location = contents[1]
         device = contents[2]
         command = contents[3]
-        if (findController(location, device) !== '') {
+        let ip = findController(location, device)
+        if (ip !== '') {
+            let client = net.Socket()
+            client.connect(23, ip, () => {
+                client.write('/' + device + '/' + command)
+                client.end()
+            })
             res.write('OK\n')
         } else {
             let msg = 'Controller Not Found!\n'
